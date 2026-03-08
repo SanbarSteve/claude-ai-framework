@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entity File Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --ink:    #18160f;
+  --paper:  #f9f7f2;
+  --card:   #ffffff;
+  --rule:   #e8e4da;
+  --muted:  #8a8478;
+  --light:  #c4bfb2;
+  --blue:   #2a4eb5;
+  --green:  #1a6b42;
+  --amber:  #c07a10;
+  --red:    #b52a2a;
+  --claude: #eef0fb;
+  --user:   #f0eef8;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── TOP BAR ── */
+.topbar {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0 28px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.topbar-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  letter-spacing: 0.3px;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: #888;
+}
+.pass-tag {
+  background: #2a2820;
+  border: 1px solid #444;
+  padding: 3px 10px;
+  border-radius: 2px;
+  color: #aaa;
+  letter-spacing: 1px;
+}
+
+/* ── KEY BAR ── */
+.keybar {
+  background: #fffbf0;
+  border-bottom: 2px solid #e8c84a;
+  padding: 8px 28px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  transition: all 0.3s;
+}
+.keybar.valid {
+  background: #f0faf5;
+  border-color: #4caf82;
+}
+.key-label {
+  font-weight: 500;
+  color: #8a6a10;
+  white-space: nowrap;
+  min-width: 160px;
+  transition: color 0.3s;
+}
+.keybar.valid .key-label { color: #1a6b42; }
+#key-field {
+  flex: 1;
+  max-width: 460px;
+  padding: 6px 12px;
+  border: 1.5px solid #ddd8c0;
+  border-radius: 3px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  background: #fffdf8;
+  outline: none;
+  transition: border-color 0.3s;
+}
+#key-field:focus { border-color: #c8a840; }
+.keybar.valid #key-field { border-color: #4caf82; background: #f8fdf9; }
+.key-hint { color: #b0a888; font-size: 11px; }
+.key-dismiss {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+}
+.key-dismiss:hover { color: #666; }
+
+/* ── USE CASE BAR ── */
+.ucbar {
+  background: var(--card);
+  border-bottom: 1px solid var(--rule);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 46px;
+  flex-shrink: 0;
+}
+.uc-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--light);
+  margin-right: 6px;
+}
+.uc-btn {
+  padding: 6px 16px;
+  border: 1.5px solid var(--rule);
+  border-radius: 2px;
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.uc-btn:hover { border-color: #bbb; color: var(--ink); }
+.uc-btn.on-personal { border-color: var(--blue); color: var(--blue); background: rgba(42,78,181,0.06); }
+.uc-btn.on-sales    { border-color: var(--red);  color: var(--red);  background: rgba(181,42,42,0.06); }
+.uc-btn.on-consumer { border-color: var(--green);color: var(--green);background: rgba(26,107,66,0.06); }
+
+/* ── PROGRESS ── */
+.progbar {
+  background: var(--card);
+  border-bottom: 1px solid var(--rule);
+  padding: 8px 28px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.prog-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 110px;
+}
+.prog-track {
+  flex: 1;
+  height: 3px;
+  background: var(--rule);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.prog-fill {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 2px;
+  width: 5%;
+  transition: width 0.5s ease;
+}
+.pass-dots { display: flex; gap: 5px; }
+.pdot {
+  width: 24px; height: 4px;
+  border-radius: 2px;
+  background: var(--rule);
+  transition: background 0.3s;
+}
+.pdot.done   { background: var(--blue); }
+.pdot.active { background: var(--blue); opacity: 0.45; }
+
+/* ── MAIN LAYOUT ── */
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── CHAT ── */
+.chat-col {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--rule);
+}
+.chat-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.chat-scroll::-webkit-scrollbar { width: 4px; }
+.chat-scroll::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+
+.msg { display: flex; gap: 12px; animation: fadeUp 0.25s ease both; }
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(6px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+  border: 1px solid var(--rule);
+  background: var(--card);
+}
+.msg-body { flex: 1; }
+.msg-who {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--light);
+  margin-bottom: 5px;
+}
+.bubble {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 3px 12px 12px 12px;
+  padding: 14px 18px;
+  font-size: 14px;
+  line-height: 1.75;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.msg.user .bubble {
+  background: var(--user);
+  border-color: #d8d4ee;
+  border-radius: 12px 3px 12px 12px;
+  color: #2a2550;
+}
+.bubble strong { font-weight: 600; }
+.bubble em { font-style: italic; color: var(--muted); }
+.topic-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  background: #eef0fb;
+  border: 1px solid #c8ceee;
+  border-radius: 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--blue);
+  margin-bottom: 9px;
+  letter-spacing: 0.5px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.chip {
+  padding: 5px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  background: var(--paper);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chip:hover { border-color: var(--blue); color: var(--blue); background: #f0f2fc; }
+
+/* typing dots */
+.typing { display: flex; gap: 4px; align-items: center; padding: 2px 0; }
+.typing span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--light);
+  animation: blink 1.2s infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink {
+  0%,80%,100% { opacity:0.3; transform:scale(1); }
+  40%          { opacity:1;   transform:scale(1.2); }
+}
+
+/* ── INPUT BAR ── */
+.input-bar {
+  border-top: 1px solid var(--rule);
+  padding: 12px 16px;
+  background: var(--card);
+  flex-shrink: 0;
+}
+.hint-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.hint-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: transparent;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.15s;
+}
+.hint-btn:hover { border-color: #aaa; color: var(--ink); }
+.input-row { display: flex; gap: 10px; align-items: flex-end; }
+#user-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid var(--rule);
+  border-radius: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  background: var(--paper);
+  line-height: 1.5;
+  min-height: 44px;
+  max-height: 120px;
+  transition: border-color 0.2s;
+}
+#user-input:focus { border-color: #b0b8e0; }
+#send-btn {
+  width: 44px; height: 44px;
+  border-radius: 4px;
+  border: none;
+  background: var(--blue);
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+#send-btn:hover:not(:disabled) { background: #1e3d9a; }
+#send-btn:disabled { background: var(--rule); color: var(--light); cursor: not-allowed; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #faf9f5;
+}
+.sidebar-section {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--rule);
+}
+.sidebar-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--light);
+  margin-bottom: 12px;
+}
+.topic-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--muted);
+  transition: all 0.15s;
+  margin-bottom: 2px;
+}
+.topic-item.active { background: #eef0fb; color: var(--blue); font-weight: 500; }
+.topic-item.done   { color: var(--green); }
+.topic-check {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--rule);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.topic-item.active .topic-check { border-color: var(--blue); background: var(--blue); color: white; }
+.topic-item.done   .topic-check { border-color: var(--green); background: var(--green); color: white; }
+
+.preview-box {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+.preview-box::-webkit-scrollbar { width: 3px; }
+.preview-box::-webkit-scrollbar-thumb { background: var(--rule); }
+#live-preview {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+#gen-btn {
+  margin: 16px 20px;
+  padding: 12px;
+  width: calc(100% - 40px);
+  border: none;
+  border-radius: 3px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+#gen-btn:hover:not(:disabled) { background: #2a2820; }
+#gen-btn:disabled { background: var(--rule); color: var(--light); cursor: not-allowed; }
+
+/* ── MODAL ── */
+.modal-bg {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.modal-bg.open { display: flex; }
+.modal-box {
+  background: var(--card);
+  border-radius: 6px;
+  width: 90%;
+  max-width: 760px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.modal-head {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-head h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+}
+.modal-close {
+  background: none; border: none; font-size: 20px;
+  cursor: pointer; color: var(--muted); line-height: 1;
+}
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+#modal-content {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+.modal-foot {
+  padding: 14px 24px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.btn-sec {
+  padding: 8px 18px;
+  border: 1.5px solid var(--rule);
+  border-radius: 3px;
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.btn-sec:hover { border-color: #aaa; color: var(--ink); }
+.btn-pri {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 3px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-pri:hover { background: #2a2820; }
+
+.spin {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-title">Entity File Builder</div>
+  <div class="topbar-right">
+    <span>AI INTERVIEW</span>
+    <span class="pass-tag" id="pass-tag">PASS 1 OF 3</span>
+  </div>
+</div>
+
+<!-- API Key bar -->
+<div class="keybar" id="keybar">
+  <span class="key-label" id="key-label">🔑 Enter your API key</span>
+  <input id="key-field" type="text" placeholder="sk-ant-api03-…" spellcheck="false" autocomplete="off">
+  <span class="key-hint">console.anthropic.com → API Keys</span>
+  <button class="key-dismiss" onclick="document.getElementById('keybar').style.display='none'">×</button>
+</div>
+
+<!-- Use case bar -->
+<div class="ucbar">
+  <span class="uc-label">Use Case</span>
+  <button class="uc-btn on-personal" id="uc-personal" onclick="switchUC('personal',this)">🧠 Personal</button>
+  <button class="uc-btn" id="uc-sales" onclick="switchUC('sales',this)">📈 Sales & Business</button>
+  <button class="uc-btn" id="uc-consumer" onclick="switchUC('consumer',this)">⚡ Consumer Apps</button>
+</div>
+
+<!-- Progress bar -->
+<div class="progbar">
+  <span class="prog-label" id="prog-label">Topic 1 of 8</span>
+  <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+  <div class="pass-dots">
+    <div class="pdot active" id="pd1"></div>
+    <div class="pdot" id="pd2"></div>
+    <div class="pdot" id="pd3"></div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Chat column -->
+  <div class="chat-col">
+    <div class="chat-scroll" id="chat"></div>
+    <div class="input-bar">
+      <div class="hint-row">
+        <button class="hint-btn" onclick="hint('Dive deeper on this topic')">↓ DIVE DEEPER</button>
+        <button class="hint-btn" onclick="hint('Move to next topic')">→ NEXT TOPIC</button>
+        <button class="hint-btn" onclick="hint('Give me an example')">? EXAMPLE</button>
+        <button class="hint-btn" onclick="hint('Skip this topic')">○ SKIP</button>
+        <button class="hint-btn" onclick="hint('Help me refine my last answer')">✦ REFINE</button>
+      </div>
+      <div class="input-row">
+        <textarea id="user-input" rows="1" placeholder="Type your answer here…" onkeydown="handleKey(event)"></textarea>
+        <button id="send-btn" onclick="send()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Interview Topics</div>
+      <div id="topic-list"></div>
+    </div>
+    <div class="sidebar-label" style="padding:14px 20px 0">Live Preview</div>
+    <div class="preview-box">
+      <div id="live-preview">Answers will appear here…</div>
+    </div>
+    <button id="gen-btn" onclick="generate()" disabled>Generate Entity File</button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modal-title">Entity File</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-content"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="closeModal()">Back</button>
+      <button class="btn-sec" onclick="copyFile(event)">📋 Copy</button>
+      <button class="btn-pri" onclick="downloadFile()">⬇ Download .md</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── API key ────────────────────────────────────────────────
+let API_KEY = '';
+
+document.getElementById('key-field').addEventListener('input', function() {
+  API_KEY = this.value.trim();
+  const bar = document.getElementById('keybar');
+  const lbl = document.getElementById('key-label');
+  if (API_KEY.length > 10) {
+    bar.classList.add('valid');
+    lbl.textContent = '✅ API key set — ready to go';
+  } else {
+    bar.classList.remove('valid');
+    lbl.textContent = '🔑 Enter your API key';
+  }
+});
+
+// ── Topics ─────────────────────────────────────────────────
+const TOPICS = {
+  personal: [
+    { id:'identity',    label:'Identity & Background',     icon:'👤' },
+    { id:'goals',       label:'Goals & Objectives',        icon:'🎯' },
+    { id:'projects',    label:'Current Projects',          icon:'📂' },
+    { id:'style',       label:'Work & Comms Style',        icon:'✍️' },
+    { id:'tools',       label:'Tools & Workflow',          icon:'🔧' },
+    { id:'knowledge',   label:'Knowledge Base',            icon:'📚' },
+    { id:'constraints', label:'Constraints & Preferences', icon:'⚖️' },
+    { id:'mcp',         label:'MCP & Integrations',        icon:'🔗' },
+  ],
+  sales: [
+    { id:'company',     label:'Company Overview',          icon:'🏢' },
+    { id:'offer',       label:'Products & Services',       icon:'📦' },
+    { id:'icp',         label:'Ideal Customer Profile',    icon:'🎯' },
+    { id:'pipeline',    label:'Current Pipeline',          icon:'📈' },
+    { id:'process',     label:'Sales Process',             icon:'🔄' },
+    { id:'competitors', label:'Competitors',               icon:'⚔️' },
+    { id:'tools',       label:'CRM & Tools',               icon:'🔧' },
+    { id:'goals',       label:'Revenue Goals',             icon:'💰' },
+  ],
+  consumer: [
+    { id:'portfolio',    label:'App Portfolio',            icon:'📱' },
+    { id:'techstack',    label:'Technology Stack',         icon:'⚙️' },
+    { id:'standards',    label:'Coding Standards',         icon:'📐' },
+    { id:'active',       label:'Active Project',           icon:'🚀' },
+    { id:'users',        label:'Target Users & Market',    icon:'👥' },
+    { id:'agents',       label:'Agent Roles',              icon:'🤖' },
+    { id:'memory',       label:'Memory & History',         icon:'🧬' },
+    { id:'integrations', label:'APIs & Integrations',      icon:'🔗' },
+  ]
+};
+
+const QUESTIONS = {
+  personal: {
+    identity:    "Let's start with the foundation. **Who are you?**\n\nTell me your name, what you do professionally, where you're based, and how you'd describe yourself in one sentence.",
+    goals:       "What are you trying to accomplish **this year?**\n\nGive me your top 2–3 goals — professional, financial, creative, or life-design. What would make this year a clear success?",
+    projects:    "What are you **actively working on right now?**\n\nWalk me through your live projects — name, one-line description, current status, and very next step.",
+    style:       "How do you like to **work and communicate?**\n\nAre you a bullet-point person or narrative? Do you want Claude to challenge you or just execute? Fast and rough, or slow and polished?",
+    tools:       "What tools are in your **daily workflow?**\n\nThink: notes, tasks, calendar, email, writing. What's your current stack — and which do you love vs. tolerate?",
+    knowledge:   "Where does your **important knowledge live?**\n\nDo you have a notes system (Notion, Obsidian, Google Docs)? A reading list? Decision logs? What exists and where?",
+    constraints: "What are your **hard constraints and preferences?**\n\nThings Claude should always or never do. Topics that are off-limits. Output formats you hate.",
+    mcp:         "What **external data** would be most valuable for Claude to access?\n\nYour calendar? Email? Drive documents? What information would give Claude truly situational awareness?",
+  },
+  sales: {
+    company:     "Tell me about **your company.**\n\nName, industry, and the single clearest sentence describing what you sell and who you sell it to.",
+    offer:       "Walk me through **what you sell.**\n\nList your products or services, rough pricing, and the key reason a customer chooses you over alternatives.",
+    icp:         "Describe your **ideal customer** in detail.\n\nIndustry, company size, buyer's job title, pain they're experiencing, and how their decision-making works.",
+    pipeline:    "What does your **current pipeline** look like?\n\nGive me your hottest 3–5 opportunities — company, deal size, stage, and what's blocking or driving each.",
+    process:     "Walk me through your **sales process** stage by stage.\n\nFrom first contact to closed-won — steps, who's involved, and how long each stage takes.",
+    competitors: "Who are your **main competitors,** and what's your honest take?\n\nWhere do you win? Where do they win?",
+    tools:       "What **CRM and sales tools** are you using?\n\nWhat's connected, what's manual, and where are the biggest workflow gaps?",
+    goals:       "What are your **revenue and growth targets** for this year?\n\nAnd what's the single biggest constraint on hitting those numbers?",
+  },
+  consumer: {
+    portfolio:    "Tell me about your **app portfolio.**\n\nWhat consumer apps are you building, have built, or planning? For each — name, status, and one sentence on what it does.",
+    techstack:    "What's your **standard technology stack?**\n\nFrontend, backend, database, auth, AI layer, deployment, payments. Be specific.",
+    standards:    "What **coding and quality standards** do you want enforced?\n\nTesting, commit conventions, documentation, code review approach.",
+    active:       "Focus on your **most active project right now.**\n\nRepo, current sprint goal, known bugs or blockers, next milestone.",
+    users:        "Who are the **target users** for your apps?\n\nDescribe them as a real person. What problem are you solving, and how are you monetizing?",
+    agents:       "Which **Claude agent roles** do you most need?\n\nWhere do you spend the most time — architecture, coding, debugging, product thinking, user research?",
+    memory:       "How do you want to **capture project history?**\n\nArchitecture decision records? Sprint retros? User feedback logs? What format would you actually maintain?",
+    integrations: "What **external APIs and services** do your apps depend on?\n\nStripe, Twilio, OpenAI, maps, analytics — what's in the picture?",
+  }
+};
+
+// ── State ──────────────────────────────────────────────────
+let state = {
+  uc:        'personal',
+  pass:      1,
+  topicIdx:  0,
+  convo:     [],
+  data:      {},
+  busy:      false
+};
+
+// ── Init ───────────────────────────────────────────────────
+function init() {
+  renderTopics();
+  addBot(getWelcome());
+  setTimeout(() => askTopic(0), 600);
+}
+
+function getWelcome() {
+  const names = { personal:'Personal Co-Pilot', sales:'Sales & Business', consumer:'Consumer Apps' };
+  return `Welcome to the **Entity File Interview** for **${names[state.uc]}.**\n\nI'll take you through ${TOPICS[state.uc].length} topics across up to 3 passes. Answer as much or as little as you know — we'll refine as we go.\n\nThe live preview builds in real time on the right. When you're done, hit Generate to get your finished entity file.\n\nReady? Let's go.`;
+}
+
+// ── Use case switch ────────────────────────────────────────
+function switchUC(uc, btn) {
+  state.uc       = uc;
+  state.pass     = 1;
+  state.topicIdx = 0;
+  state.convo    = [];
+  state.data     = {};
+
+  document.querySelectorAll('.uc-btn').forEach(b => {
+    b.className = 'uc-btn';
+  });
+  btn.classList.add('on-' + uc);
+
+  document.getElementById('chat').innerHTML = '';
+  document.getElementById('live-preview').textContent = 'Answers will appear here…';
+  document.getElementById('gen-btn').disabled = true;
+  document.getElementById('prog-fill').style.width = '5%';
+
+  updatePassDots();
+  renderTopics();
+  addBot(getWelcome());
+  setTimeout(() => askTopic(0), 600);
+}
+
+// ── Topic rendering ────────────────────────────────────────
+function renderTopics() {
+  const topics = TOPICS[state.uc];
+  document.getElementById('topic-list').innerHTML = topics.map((t, i) => `
+    <div class="topic-item ${i === state.topicIdx ? 'active' : ''} ${state.data[t.id] ? 'done' : ''}">
+      <div class="topic-check">${state.data[t.id] ? '✓' : i === state.topicIdx ? '→' : ''}</div>
+      <span>${t.icon} ${t.label}</span>
+    </div>
+  `).join('');
+}
+
+// ── Ask a topic ────────────────────────────────────────────
+function askTopic(idx) {
+  const topics = TOPICS[state.uc];
+  if (idx >= topics.length) { endPass(); return; }
+  state.topicIdx = idx;
+  renderTopics();
+  updateProgress();
+  const t = topics[idx];
+  addBot(`<div class="topic-chip">${t.icon} ${t.label}</div>\n${QUESTIONS[state.uc][t.id]}`);
+}
+
+// ── End of pass ────────────────────────────────────────────
+function endPass() {
+  const answered = Object.keys(state.data).length;
+  const total    = TOPICS[state.uc].length;
+  if (state.pass < 3 && answered > 0) {
+    addBot(`✅ **Pass ${state.pass} complete** — ${answered} of ${total} topics covered.\n\nShall I start **Pass ${state.pass + 1}** to deepen and refine? Or click Generate if you're ready.`,
+      ['Start Pass ' + (state.pass + 1), 'Generate now']);
+  } else {
+    addBot(`🎉 **Interview complete!** All ${total} topics covered across ${state.pass} pass${state.pass>1?'es':''}.\n\nClick **Generate Entity File** to build your final document.`);
+    document.getElementById('gen-btn').disabled = false;
+  }
+}
+
+// ── Messages ───────────────────────────────────────────────
+function addBot(text, chips=[]) {
+  const el = document.createElement('div');
+  el.className = 'msg bot';
+  el.innerHTML = `
+    <div class="avatar">🤖</div>
+    <div class="msg-body">
+      <div class="msg-who">Claude · Interviewer</div>
+      <div class="bubble">${fmt(text)}${chips.length ? `<div class="chips">${chips.map(c=>`<button class="chip" onclick="hint('${c}')">${c}</button>`).join('')}</div>` : ''}</div>
+    </div>`;
+  document.getElementById('chat').appendChild(el);
+  scrollChat();
+  state.convo.push({ role:'assistant', content:text });
+}
+
+function addUser(text) {
+  const el = document.createElement('div');
+  el.className = 'msg user';
+  el.innerHTML = `
+    <div class="avatar" style="order:2">👤</div>
+    <div class="msg-body" style="order:1">
+      <div class="msg-who" style="text-align:right">You</div>
+      <div class="bubble">${fmt(text)}</div>
+    </div>`;
+  document.getElementById('chat').appendChild(el);
+  scrollChat();
+  state.convo.push({ role:'user', content:text });
+}
+
+function showTyping() {
+  const el = document.createElement('div');
+  el.className = 'msg bot'; el.id = 'typing';
+  el.innerHTML = `<div class="avatar">🤖</div><div class="msg-body"><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div></div>`;
+  document.getElementById('chat').appendChild(el);
+  scrollChat();
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+function scrollChat() {
+  const c = document.getElementById('chat');
+  c.scrollTop = c.scrollHeight;
+}
+
+function fmt(t) {
+  return t
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+// ── Send ───────────────────────────────────────────────────
+function send() {
+  const inp = document.getElementById('user-input');
+  const txt = inp.value.trim();
+  if (!txt || state.busy) return;
+  inp.value = '';
+  inp.style.height = 'auto';
+  dispatch(txt);
+}
+
+function hint(txt) { dispatch(txt); }
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+async function dispatch(userText) {
+  if (!API_KEY) {
+    addBot('⚠️ **No API key detected.**\n\nPaste your Anthropic API key in the yellow bar at the top, then try again.');
+    return;
+  }
+
+  addUser(userText);
+  state.busy = true;
+  document.getElementById('send-btn').disabled = true;
+  showTyping();
+
+  try {
+    const reply = await callClaude(userText);
+    removeTyping();
+    handleReply(reply, userText);
+  } catch(err) {
+    removeTyping();
+    addBot(`⚠️ **Error:** ${err.message}\n\nCheck that your API key is correct and try again.`);
+  }
+
+  state.busy = false;
+  document.getElementById('send-btn').disabled = false;
+}
+
+// ── Claude API ─────────────────────────────────────────────
+async function callClaude(userText) {
+  const topics  = TOPICS[state.uc];
+  const current = topics[state.topicIdx] || topics[topics.length-1];
+  const summary = JSON.stringify(state.data, null, 2);
+
+  const system = `You are an expert AI interviewer building a Claude Entity File for the "${state.uc}" use case.
+
+Interview state:
+- Pass: ${state.pass} of 3
+- Current topic: ${current.label} (${state.topicIdx+1} of ${topics.length})
+- Topics answered: ${Object.keys(state.data).join(', ') || 'none yet'}
+- Collected so far: ${summary}
+
+Instructions:
+1. Read the user's response and acknowledge it warmly
+2. Extract the key information into a concise value
+3. Ask ONE smart follow-up OR move to the next topic
+4. If user says "next topic", "skip", or "move on" — advance
+5. If user says "dive deeper" — ask a deeper follow-up
+6. If user says "refine" — help improve their last answer
+7. If user says "Start Pass 2" or "Start Pass 3" — acknowledge and restart from topic 0
+8. If all topics covered — confirm ready to generate
+
+After your conversational response, append this exact block:
+<DATA>{"action":"ANSWER|NEXT|SKIP|COMPLETE","topic_id":"${current.id}","next_idx":${state.topicIdx},"value":"extracted answer"}</DATA>
+
+Rules for the DATA block:
+- action NEXT or SKIP: set next_idx to the NEXT topic index (current + 1)
+- action ANSWER: keep next_idx the same as current
+- value: a concise 1-2 sentence summary of what was shared
+- Keep the DATA block on one line, valid JSON`;
+
+  const messages = [
+    ...state.convo.slice(-10),
+    { role:'user', content:userText }
+  ];
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 1024,
+      system,
+      messages
+    })
+  });
+
+  if (!res.ok) {
+    const e = await res.json().catch(()=>({}));
+    throw new Error(`${res.status} — ${e?.error?.message || res.statusText}`);
+  }
+
+  const d = await res.json();
+  return d.content?.[0]?.text || '';
+}
+
+// ── Handle reply ───────────────────────────────────────────
+function handleReply(fullText, userInput) {
+  // Parse DATA block
+  const match = fullText.match(/<DATA>(.*?)<\/DATA>/s);
+  let action='ANSWER', topicId=null, nextIdx=state.topicIdx, value='';
+
+  if (match) {
+    try {
+      const p  = JSON.parse(match[1].trim());
+      action   = (p.action||'ANSWER').toUpperCase();
+      topicId  = p.topic_id;
+      nextIdx  = parseInt(p.next_idx) ?? state.topicIdx;
+      value    = p.value || '';
+    } catch(e) {}
+  }
+
+  // Display (strip DATA block)
+  const display = fullText.replace(/<DATA>.*?<\/DATA>/s, '').trim();
+  addBot(display);
+
+  // Store data
+  if (value && topicId) {
+    state.data[topicId] = value;
+    updatePreview();
+    updateProgress();
+  }
+
+  // Navigate
+  if (action === 'NEXT' || action === 'SKIP') {
+    state.topicIdx = nextIdx;
+    const total = TOPICS[state.uc].length;
+    if (nextIdx < total) {
+      setTimeout(() => askTopic(nextIdx), 400);
+    } else {
+      setTimeout(() => endPass(), 400);
+    }
+  } else if (action === 'COMPLETE') {
+    document.getElementById('gen-btn').disabled = false;
+  }
+
+  // Keyword overrides
+  const low = userInput.toLowerCase();
+  if (low.includes('start pass 2') && state.pass < 2) {
+    state.pass = 2; state.topicIdx = 0;
+    updatePassDots();
+    setTimeout(() => {
+      addBot(`**Starting Pass 2 — Refinement.**\n\nI'll revisit each topic to deepen answers and fill gaps.`);
+      setTimeout(() => askTopic(0), 400);
+    }, 400);
+  } else if (low.includes('start pass 3') && state.pass < 3) {
+    state.pass = 3; state.topicIdx = 0;
+    updatePassDots();
+    setTimeout(() => {
+      addBot(`**Starting Pass 3 — Polish.**\n\nFinal pass — sharpening precision and completeness.`);
+      setTimeout(() => askTopic(0), 400);
+    }, 400);
+  } else if (low.includes('generate now')) {
+    document.getElementById('gen-btn').disabled = false;
+  }
+
+  // Unlock generate after 4 answers
+  if (Object.keys(state.data).length >= 4) {
+    document.getElementById('gen-btn').disabled = false;
+  }
+
+  renderTopics();
+}
+
+// ── Preview ────────────────────────────────────────────────
+function updatePreview() {
+  const topics = TOPICS[state.uc];
+  let out = `# ${state.uc.toUpperCase()} ENTITY FILE\n`;
+  topics.forEach(t => {
+    if (state.data[t.id]) out += `\n## ${t.label}\n${state.data[t.id]}\n`;
+  });
+  document.getElementById('live-preview').textContent = out;
+}
+
+// ── Progress ───────────────────────────────────────────────
+function updateProgress() {
+  const total    = TOPICS[state.uc].length;
+  const answered = Object.keys(state.data).length;
+  const pct      = Math.max(5, Math.round(answered / total * 100));
+  document.getElementById('prog-fill').style.width  = pct + '%';
+  document.getElementById('prog-label').textContent = `Topic ${Math.min(state.topicIdx+1, total)} of ${total}`;
+}
+
+function updatePassDots() {
+  for (let i=1; i<=3; i++) {
+    const d = document.getElementById('pd'+i);
+    d.className = 'pdot' + (i < state.pass ? ' done' : i === state.pass ? ' active' : '');
+  }
+  document.getElementById('pass-tag').textContent = `PASS ${state.pass} OF 3`;
+}
+
+// ── Generate ───────────────────────────────────────────────
+async function generate() {
+  if (!API_KEY) { addBot('⚠️ Paste your API key in the banner above first.'); return; }
+
+  const btn = document.getElementById('gen-btn');
+  btn.innerHTML = '<span class="spin"></span>Generating…';
+  btn.disabled = true;
+
+  const topics  = TOPICS[state.uc];
+  const ucNames = { personal:'Personal Co-Pilot', sales:'Sales & Business', consumer:'Consumer Apps' };
+  const summary = topics.map(t => `## ${t.label}\n${state.data[t.id]||'[Not provided]'}`).join('\n\n');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 2000,
+        messages: [{
+          role: 'user',
+          content: `Generate a polished Claude Entity File for the "${ucNames[state.uc]}" use case.\n\nInterview data:\n${summary}\n\nFormat as markdown with:\n- Title and version header\n- ## section headers per topic\n- Fill gaps with [TO CONFIRM] where needed\n- Final ## How to Use This File section with 3 bullet points\n- Professional, Claude-optimized language\n\nReturn ONLY the markdown.`
+        }]
+      })
+    });
+
+    if (!res.ok) {
+      const e = await res.json().catch(()=>({}));
+      throw new Error(`${res.status} — ${e?.error?.message || res.statusText}`);
+    }
+
+    const d = await res.json();
+    const content = d.content?.[0]?.text || '';
+
+    document.getElementById('modal-title').textContent = `Entity File — ${ucNames[state.uc]}`;
+    document.getElementById('modal-content').textContent = content;
+    document.getElementById('modal').classList.add('open');
+
+  } catch(e) {
+    addBot(`⚠️ **Generation failed:** ${e.message}`);
+  } finally {
+    btn.innerHTML = 'Generate Entity File';
+    btn.disabled  = false;
+  }
+}
+
+// ── Modal ──────────────────────────────────────────────────
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function copyFile(event) {
+  const text = document.getElementById('modal-content').textContent;
+  const btn  = event.currentTarget;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy', 2000);
+  });
+}
+
+function downloadFile() {
+  const text = document.getElementById('modal-content').textContent;
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(new Blob([text], {type:'text/markdown'}));
+  a.download = `entity-file-${state.uc}.md`;
+  a.click();
+}
+
+// ── Boot ───────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
